@@ -55,7 +55,9 @@ export default function Hero() {
           </span>
         </h1>
 
-        <div className="mt-14 flex flex-wrap items-end gap-x-16 gap-y-9">
+        {/* held to the left half on wide screens: past that the CTA drifts
+            under the flacon and reads as sitting on the glass */}
+        <div className="mt-14 flex max-w-[52ch] flex-wrap items-end gap-x-12 gap-y-9 lg:max-w-[58%]">
           <p className="hero-tail max-w-[42ch] translate-y-5 text-[clamp(1rem,0.9rem+0.45vw,1.18rem)] text-muted opacity-0">
             Five extraits, one glass form, made in small batches in Garden City. Macerated six
             months before anyone is allowed to smell them.

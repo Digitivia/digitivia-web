@@ -24,7 +24,15 @@ export default function Cursor() {
     const rx = gsap.quickTo(r, 'x', { duration: 0.55, ease: 'power3.out' })
     const ry = gsap.quickTo(r, 'y', { duration: 0.55, ease: 'power3.out' })
 
+    // until the pointer has moved once, both parts would sit at 0,0 in the
+    // corner — visible in any screenshot and in the first frame of a recording
+    let seen = false
     const move = (e: PointerEvent) => {
+      if (!seen) {
+        seen = true
+        gsap.set([d, r], { x: e.clientX, y: e.clientY })
+        gsap.to([d, r], { autoAlpha: 1, duration: 0.4 })
+      }
       dx(e.clientX)
       dy(e.clientY)
       rx(e.clientX)
@@ -64,7 +72,7 @@ export default function Cursor() {
     const down = () => gsap.to(r, { scale: 0.82, duration: 0.2, ease: 'power2.out' })
     const up = () => gsap.to(r, { scale: 1, duration: 0.4, ease: 'expo.out' })
 
-    gsap.set([d, r], { xPercent: -50, yPercent: -50 })
+    gsap.set([d, r], { xPercent: -50, yPercent: -50, autoAlpha: 0 })
     gsap.set(l, { autoAlpha: 0, scale: 0.6 })
 
     window.addEventListener('pointermove', move, { passive: true })
