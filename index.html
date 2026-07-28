@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070A" />
+    <title>Digitivia — From signal to system</title>
+    <meta
+      name="description"
+      content="Digitivia builds AI agents that answer, sell and book across WhatsApp, Instagram, Messenger, Telegram and your storefront — in Arabic and English."
+    />
+  </head>
+  <body>
+    <script>
+      // Motion override, applied before first paint. Windows' "animation
+      // effects" toggle makes Chrome report prefers-reduced-motion: reduce,
+      // which would strip the whole page — ?motion=full ignores it and sticks.
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search).get('motion')
+          if (q) localStorage.setItem('digitivia:motion', q)
+          var mode = q || localStorage.getItem('digitivia:motion')
+          if (mode === 'full') document.documentElement.classList.add('force-motion')
+          if (mode === 'reduce') document.documentElement.classList.add('force-reduce')
+        } catch (e) {}
+      })()
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
