@@ -4,22 +4,17 @@
 @import '@fontsource-variable/inter';
 
 @theme {
-  /* ground carries a slight indigo bias, taken from the logo lockup */
-  --color-ground: #06060d;
-  --color-raised: #0d0c1a;
-  --color-line: #201d3d;
-  --color-brand: #2a1466; /* logo field */
-  --color-violet: #6e4ff6; /* primary accent */
-  --color-lift: #a58cff;
-  --color-teal: #5baeb0; /* secondary signal accent */
-  --color-ink: #eeecf6;
-  --color-muted: #7b76a0;
-
-  /* channel colours, used only inside the live console */
-  --color-wa: #25d366;
-  --color-ig: #e1306c;
-  --color-msgr: #0084ff;
-  --color-shopify: #95bf47;
+  /* warm near-black: the ground is night air, not a screen */
+  --color-ground: #08060a;
+  --color-raised: #120e11;
+  --color-line: #2a2020;
+  --color-brand: #3a1d10; /* burnt ground under the light */
+  --color-ember: #ff7a3c; /* the source */
+  --color-amber: #e9a25b; /* the reach of it */
+  --color-hot: #fff1dd; /* the core */
+  --color-jade: #6fb2a1; /* one cold accent, so warm reads as warm */
+  --color-ink: #f4ede2; /* bone */
+  --color-muted: #8d8177;
 
   --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --font-body: 'Inter Variable', system-ui, sans-serif;
@@ -40,11 +35,11 @@
     overflow-x: hidden;
   }
   ::selection {
-    background: var(--color-teal);
-    color: #04070a;
+    background: var(--color-amber);
+    color: #14090a;
   }
   :focus-visible {
-    outline: 2px solid var(--color-lift);
+    outline: 2px solid var(--color-amber);
     outline-offset: 4px;
   }
   h1,
@@ -89,7 +84,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-teal);
+  color: var(--color-amber);
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
@@ -111,19 +106,46 @@
   will-change: transform;
 }
 
-/* camera mode: while the tour drives, nothing on screen belongs to a browser */
-body.tour-on {
-  cursor: none;
+/* liquid glass: the cart drawer and any panel that floats over the scene.
+   backdrop-filter does the refraction, the inset hairline does the edge. */
+.glass {
+  background: color-mix(in oklab, var(--color-raised) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--color-hot) 12%, transparent),
+    inset 0 0 60px color-mix(in oklab, var(--color-ember) 5%, transparent),
+    0 40px 120px rgba(0, 0, 0, 0.7);
 }
-body.tour-on header {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.6s ease;
+
+/* route change: the DOM cross-dissolves while the camera moves in the canvas,
+   so a navigation never reads as a page load */
+@view-transition {
+  navigation: auto;
 }
-body.tour-on .cursor-dot,
-body.tour-on .cursor-ring {
-  opacity: 0;
-  transition: opacity 0.4s ease;
+::view-transition-old(root) {
+  animation: vt-out 0.42s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-in 0.62s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.985);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.015);
+  }
+}
+html.force-reduce ::view-transition-old(root),
+html.force-reduce ::view-transition-new(root) {
+  animation: none;
 }
 
 /* a page filmed off a screen should not show a scrollbar */

@@ -56,11 +56,11 @@ export default function Preloader() {
           {n < 10 ? `0${n}` : n}
         </span>
         <span className="absolute bottom-10 font-mono text-[0.66rem] tracking-[0.32em] text-muted uppercase">
-          Digitivia — establishing signal
+          KHAMSIN — Cairo
         </span>
       </div>
       <div className="pl-meta absolute inset-x-0 bottom-0 h-px bg-line">
-        <div className="pl-bar h-full w-full origin-left scale-x-0 bg-linear-to-r from-violet to-lift" />
+        <div className="pl-bar h-full w-full origin-left scale-x-0 bg-linear-to-r from-ember to-amber" />
       </div>
     </div>
   )

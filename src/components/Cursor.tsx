@@ -39,8 +39,8 @@ export default function Cursor() {
       gsap.to(r, {
         width: hot ? 92 : 58,
         height: hot ? 92 : 58,
-        backgroundColor: hot ? '#a58cff' : 'rgba(165,140,255,0.12)',
-        borderColor: hot ? 'rgba(165,140,255,0)' : '#a58cff',
+        backgroundColor: hot ? '#e9a25b' : 'rgba(233,162,91,0.14)',
+        borderColor: hot ? 'rgba(233,162,91,0)' : '#e9a25b',
         duration: 0.5,
         ease: 'expo.out',
       })
@@ -52,8 +52,8 @@ export default function Cursor() {
       gsap.to(r, {
         width: 36,
         height: 36,
-        backgroundColor: 'rgba(165,140,255,0)',
-        borderColor: 'rgba(165,140,255,0.5)',
+        backgroundColor: 'rgba(233,162,91,0)',
+        borderColor: 'rgba(233,162,91,0.55)',
         duration: 0.5,
         ease: 'expo.out',
       })
@@ -91,19 +91,19 @@ export default function Cursor() {
       <div
         ref={dot}
         className="cursor-dot"
-        style={{ width: 6, height: 6, background: '#a58cff' }}
+        style={{ width: 6, height: 6, background: '#e9a25b' }}
         aria-hidden
       />
       <div
         ref={ring}
         className="cursor-ring grid place-items-center"
-        style={{ width: 36, height: 36, border: '1px solid rgba(165,140,255,0.5)' }}
+        style={{ width: 36, height: 36, border: '1px solid rgba(233,162,91,0.55)' }}
         aria-hidden
       >
         <span
           ref={label}
           className="font-mono text-[0.55rem] tracking-[0.16em] uppercase whitespace-nowrap"
-          style={{ color: '#04070a' }}
+          style={{ color: '#1a0d06' }}
         />
       </div>
     </>

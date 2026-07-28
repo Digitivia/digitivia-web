@@ -47,7 +47,7 @@ export default function Marquee({
         {[...items, ...items].map((it, i) => (
           <span key={i} className={`flex items-center gap-10 pr-10 whitespace-nowrap ${itemClassName}`}>
             {it}
-            <span className="text-violet">✦</span>
+            <span className="text-amber/70">✦</span>
           </span>
         ))}
       </div>

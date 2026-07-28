@@ -1,32 +1,49 @@
-# React + TypeScript + Vite
+# KHAMSIN
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Storefront for a fictional niche fragrance house in Cairo — a portfolio project built by Digitivia.
+The house, its perfumes and its prices are invented; no payment is ever taken.
 
-Currently, two official plugins are available:
+Live: <https://digitivia.github.io/digitivia-web/>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Running it
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # http://localhost:5273
+npm run build    # typecheck + bundle to ./dist
+npm run test     # cart reducer
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Add `?motion=full` to the URL to force full motion on a machine whose OS reports
+`prefers-reduced-motion: reduce` (Windows' "animation effects" toggle does this). `?motion=reduce`
+forces the opposite. The choice sticks in `localStorage`.
+
+## How it fits together
+
+One fixed WebGL canvas sits behind the whole document: the lit contour field, one glass flacon, and
+the post stack. The DOM never passes scene data as props — React owns the page, the render loop owns
+the scene, and `src/lib/scene.ts` is the single mutable channel between them.
+
+There is exactly one transmissive mesh on screen at any time. Transmission re-renders the scene once
+per glass object, so the collection is one flacon that changes juice and light rather than five
+bottles in a grid.
+
+```
+src/
+  data/catalog.ts        the five perfumes
+  lib/scene.ts           the DOM → canvas channel (active, focus, pulse, dim, sillage)
+  lib/route.ts           hash routing + view transitions
+  lib/cart.tsx           cart context; the reducer is pure and tested
+  lib/motion.ts          Lenis, reduced-motion policy, pointer + sillage sampling
+  lib/scrollfx.ts        one scroll choreography pass, opted into with data-fx
+  components/Scene.tsx   the canvas: field, flacon, lights, effects
+```
+
+Design decisions and their reasoning: [`docs/superpowers/specs/2026-07-28-khamsin-storefront-design.md`](docs/superpowers/specs/2026-07-28-khamsin-storefront-design.md).
+
+## Deploying
+
+Pushing to `main` builds and publishes to GitHub Pages (`.github/workflows/deploy.yml`). Vite's
+`base` switches to `/digitivia-web/` only under `GITHUB_ACTIONS`; point a custom domain at it and
+set that back to `/`.

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import { pushTrail } from './scene'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -45,6 +46,7 @@ if (typeof window !== 'undefined') {
     (e) => {
       pointerState.x = (e.clientX / window.innerWidth) * 2 - 1
       pointerState.y = -((e.clientY / window.innerHeight) * 2 - 1)
+      pushTrail(pointerState.x, pointerState.y, e.timeStamp)
     },
     { passive: true },
   )

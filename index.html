@@ -2,14 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="./digitivia-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="./mark.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#05070A" />
-    <title>Digitivia — From signal to system</title>
+    <meta name="theme-color" content="#08060A" />
+    <title>KHAMSIN — Parfums d'extrait, Cairo</title>
     <meta
       name="description"
-      content="Digitivia builds AI agents that answer, sell and book across WhatsApp, Instagram, Messenger, Telegram and your storefront — in Arabic and English."
+      content="Five extraits, one glass form. Made in small batches in Garden City, Cairo, and macerated six months before release."
     />
+    <meta property="og:title" content="KHAMSIN — Parfums d'extrait, Cairo" />
+    <meta
+      property="og:description"
+      content="Five extraits, one glass form. The wind leaves something on you."
+    />
+    <meta property="og:type" content="website" />
   </head>
   <body>
     <script>
@@ -19,8 +25,8 @@
       (function () {
         try {
           var q = new URLSearchParams(location.search).get('motion')
-          if (q) localStorage.setItem('digitivia:motion', q)
-          var mode = q || localStorage.getItem('digitivia:motion')
+          if (q) localStorage.setItem('khamsin:motion', q)
+          var mode = q || localStorage.getItem('khamsin:motion')
           if (mode === 'full') document.documentElement.classList.add('force-motion')
           if (mode === 'reduce') document.documentElement.classList.add('force-reduce')
         } catch (e) {}
