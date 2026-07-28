@@ -25,6 +25,8 @@ const fragment = /* glsl */ `
   uniform float uAspect;
   uniform vec2  uPointer;  // -1..1
   uniform float uSwell;    // click swell, decays back to 0
+  uniform vec2  uLight;    // the source lighting the field
+  uniform float uHeat;     // how hot the source burns, cools as you scroll
 
   varying vec2 vUv;
 
@@ -80,23 +82,51 @@ const fragment = /* glsl */ `
     // wash, so fade them out instead of drawing them
     line *= 1.0 - smoothstep(0.16, 0.45, w);
 
-    // depth cue — lines near the pointer and the centre read brighter
-    float centre = 1.0 - smoothstep(0.15, 1.05, length(p));
+    // ── the field is lit, not tinted. one source, everything falls off it
+    vec2  lp    = vec2(uLight.x * uAspect, uLight.y);
+    float ld    = length(p - lp);
+    float core  = exp(-ld * ld * 9.0);              // the hot centre, kept small
+    float halo  = exp(-ld * ld * 1.9);              // the reach of the glow
+    float beam  = exp(-pow(abs(p.x - lp.x) * 4.2, 1.7)) *
+                  smoothstep(-0.1, 0.75, p.y - lp.y) *
+                  smoothstep(0.95, 0.35, p.y - lp.y); // light climbing, then fading
+
+    float lit = (core * 0.85 + halo * 0.30 + beam * 0.16) * uHeat;
+
     float near   = exp(-d * d * 3.0);
-    float energy = line * (0.30 + centre * 0.26 + near * 0.40);
+    float energy = line * (0.14 + lit * 0.80 + near * 0.34);
 
-    vec3 deep = vec3(0.16, 0.12, 0.40); // brand indigo
-    vec3 lift = vec3(0.62, 0.54, 1.00);
-    vec3 warm = vec3(0.36, 0.68, 0.70); // teal, only at the brightest crests
-    vec3 col  = mix(deep, lift, energy);
-    col = mix(col, warm, smoothstep(0.75, 1.35, energy) * 0.5);
+    // four stops, cool to hot: teal rim → brand violet → magenta flare →
+    // white core. the flare is what makes the light read as a real source
+    // rather than a purple fog, and the cool rim keeps it three-dimensional.
+    vec3 rim   = vec3(0.08, 0.44, 0.55);
+    vec3 brand = vec3(0.40, 0.19, 1.00);
+    vec3 flare = vec3(0.95, 0.30, 0.86);
+    vec3 hot   = vec3(1.00, 0.96, 1.00);
+    vec3 col   = mix(rim, brand, smoothstep(0.015, 0.26, lit));
+    col = mix(col, flare, smoothstep(0.26, 0.72, lit) * 0.8);
+    col = mix(col, hot, smoothstep(0.95, 1.55, lit + energy * 0.3));
 
-    // vertical falloff so the field never fights the copy at the edges
-    float veil = smoothstep(0.0, 0.26, uv.y) * smoothstep(1.0, 0.74, uv.y);
+    // crush the frame: corners go to true black so the light has somewhere
+    // to fall off to, the way a lens sees a source in a dark room
+    float veil = smoothstep(0.0, 0.22, uv.y) * smoothstep(1.0, 0.80, uv.y);
+    float edge = 1.0 - smoothstep(0.35, 1.25, length(vec2(p.x * 0.62, p.y)));
 
     // additive blending ignores alpha, so premultiply: empty space must
     // contribute exactly nothing, or the whole quad hazes the page grey
-    vec3 outc = col * energy * (0.26 + veil * 0.55) * 0.78;
+    vec3 outc = col * energy * (0.22 + veil * 0.6) * (0.35 + edge * 0.9);
+
+    // a bare breath of the source itself, so the glow reads even between lines
+    outc += (core * 0.05 + halo * 0.012) * uHeat * mix(brand, flare, core) * edge;
+
+    // tone map. additive light has no ceiling of its own, and without this the
+    // bright half of the frame clips to flat white
+    outc = outc / (1.0 + outc);
+
+    // tone mapping desaturates as it compresses, so put the chroma back
+    float luma = dot(outc, vec3(0.2126, 0.7152, 0.0722));
+    outc = mix(vec3(luma), outc, 1.55);
+    outc = max(outc, vec3(0.0));
 
     gl_FragColor = vec4(outc, 1.0);
   }
@@ -114,6 +144,8 @@ export default function SignalField({ reduced }: { reduced: boolean }) {
       uAspect: { value: 1 },
       uPointer: { value: new THREE.Vector2(0, 0) },
       uSwell: { value: 0 },
+      uLight: { value: new THREE.Vector2(0.16, -0.36) },
+      uHeat: { value: 1 },
     }),
     [],
   )
@@ -134,6 +166,16 @@ export default function SignalField({ reduced }: { reduced: boolean }) {
     // the field settles across the first screen of scrolling
     const target = Math.min(1, scrollState.progress * 4.5)
     u.uOrder.value += (target - u.uOrder.value) * 0.045
+
+    // the source burns brightest in the hero, then cools to atmosphere so the
+    // rest of the page keeps its contrast
+    const heat = 1 - Math.min(1, scrollState.progress * 3.4) * 0.62
+    u.uHeat.value += (heat - u.uHeat.value) * 0.05
+
+    // it also drifts a little with the pointer, like a light you can nudge
+    const lt = u.uLight.value as THREE.Vector2
+    lt.x += (0.16 + pointerState.x * 0.1 - lt.x) * 0.03
+    lt.y += (-0.36 + pointerState.y * 0.06 - lt.y) * 0.03
 
     if (pointerState.click) {
       pointerState.click = 0
