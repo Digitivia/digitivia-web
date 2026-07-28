@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Magnetic from './Magnetic'
+// imported (not a /public path) so Vite rewrites it for the Pages base URL
+import logo from '../assets/digitivia-logo.png'
 
 const LINKS = [
   { href: '#platform', label: 'Platform' },
@@ -55,7 +57,7 @@ export default function Nav() {
           className="group flex items-center"
         >
           <img
-            src="/digitivia-logo.png"
+            src={logo}
             alt="Digitivia"
             width={1998}
             height={668}
