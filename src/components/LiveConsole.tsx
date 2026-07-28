@@ -305,7 +305,7 @@ export default function LiveConsole() {
         </div>
 
         {/* ── the phone ── */}
-        <div className="flex justify-center lg:col-span-4">
+        <div data-fx="depth" className="flex justify-center lg:col-span-4">
           <div
             className="relative w-full max-w-[22rem] rounded-[2.2rem] border border-line bg-[#0a0c14] p-2.5 shadow-[0_40px_120px_-40px_rgba(110,79,246,0.5)]"
             style={{ boxShadow: `0 40px 120px -50px ${thread.accent}` }}
@@ -382,7 +382,7 @@ export default function LiveConsole() {
         </div>
 
         {/* ── what the agent did ── */}
-        <div className="lg:col-span-4">
+        <div data-fx="right" className="lg:col-span-4">
           <div className="flex h-full flex-col rounded-lg border border-line bg-raised/50 backdrop-blur-sm">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <span className="font-mono text-[0.62rem] tracking-[0.2em] text-muted uppercase">

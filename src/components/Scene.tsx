@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import gsap from 'gsap'
 import SignalField from './SignalField'
 import { prefersReduced } from '../lib/motion'
@@ -34,12 +33,9 @@ export default function Scene() {
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0, 9.5], fov: 50 }}
       >
+        {/* No bloom: it smears the thin contours into a grey haze. The lines
+            carry their own glow in the shader instead. */}
         <SignalField reduced={reduced} />
-        {!reduced && (
-          <EffectComposer>
-            <Bloom intensity={1.7} luminanceThreshold={0.06} luminanceSmoothing={0.45} mipmapBlur />
-          </EffectComposer>
-        )}
       </Canvas>
     </div>
   )

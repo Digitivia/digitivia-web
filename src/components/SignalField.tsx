@@ -3,139 +3,117 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { pointerState, scrollState } from '../lib/motion'
 
-const COUNT = 26000
-const COLS = 200
-const ROWS = COUNT / COLS
+/**
+ * A flowing contour field: thin lines drifting like a slow current.
+ * Turbulent at the top of the page (signal), easing into a calm parallel
+ * rhythm as you scroll (system). One fullscreen quad, no particles.
+ */
 
 const vertex = /* glsl */ `
-  uniform float uTime;
-  uniform float uOrder;      // 0 = signal (chaotic vortex), 1 = system (grid)
-  uniform vec2  uPointer;    // world-space pointer
-  uniform float uBurst;      // click shockwave radius, 0 when idle
-  uniform float uVel;        // scroll velocity
-
-  attribute vec3  aGrid;
-  attribute float aSeed;
-  attribute float aRadius;
-  attribute float aSpeed;
-
-  varying float vGlow;
-  varying float vDepth;
-
-  // cheap 3d hash noise — enough for organic drift, far cheaper than simplex
-  float hash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
-  float noise(vec3 p){
-    vec3 i = floor(p), f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    float n = mix(
-      mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-      mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
-      f.z);
-    return n * 2.0 - 1.0;
-  }
-
+  varying vec2 vUv;
   void main() {
-    // ── state A: the signal. a turbulent torus of noise-driven orbits
-    float ang = aSeed * 6.2831853 + uTime * aSpeed * (1.0 + uVel * 0.4);
-    float r   = aRadius * (1.0 + noise(vec3(aSeed * 7.0, uTime * 0.22, 0.0)) * 0.24);
-    // the signal state sits right of centre so the headline keeps a clean field
-    vec3 signalPos = vec3(cos(ang) * r * 1.5 + 3.1, sin(ang) * r * 0.92, sin(ang * 2.0 + aSeed * 9.0) * 1.4);
-    signalPos += vec3(
-      noise(vec3(signalPos.xy * 0.34, uTime * 0.18)),
-      noise(vec3(signalPos.yz * 0.34, uTime * 0.18 + 4.0)),
-      noise(vec3(signalPos.zx * 0.34, uTime * 0.18 + 8.0))
-    ) * 0.85;
-
-    // ── state B: the system. an exact lattice, breathing very slightly
-    vec3 gridPos = aGrid;
-    gridPos.z += sin(uTime * 0.9 + aGrid.x * 0.55 + aGrid.y * 0.35) * 0.13;
-
-    // stagger the morph so the lattice assembles left-to-right, not all at once
-    float stagger = clamp((uOrder * 1.55) - (aGrid.x + 9.0) / 20.0, 0.0, 1.0);
-    float k = stagger * stagger * (3.0 - 2.0 * stagger);
-    vec3 pos = mix(signalPos, gridPos, k);
-
-    // ── pointer repulsion, strongest while the field is still chaotic
-    vec2 toP = pos.xy - uPointer;
-    float d = length(toP);
-    float push = smoothstep(3.4, 0.0, d) * (1.0 - k * 0.65);
-    pos.xy += normalize(toP + 1e-4) * push * 1.5;
-
-    // ── click shockwave: a travelling ring of displacement
-    float band = 1.0 - smoothstep(0.0, 0.9, abs(d - uBurst));
-    pos.xy += normalize(toP + 1e-4) * band * 1.1;
-
-    vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-    gl_Position = projectionMatrix * mv;
-
-    vDepth = clamp((pos.z + 2.5) / 5.0, 0.0, 1.0);
-    vGlow  = push * 1.6 + band * 2.2 + k * 0.55 + 0.55;
-    gl_PointSize = (9.0 + vDepth * 11.0 + push * 14.0) * (1.0 / -mv.z);
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `
 
 const fragment = /* glsl */ `
-  precision mediump float;
-  varying float vGlow;
-  varying float vDepth;
+  precision highp float;
+
+  uniform float uTime;
+  uniform float uOrder;    // 0 = turbulent, 1 = settled
+  uniform float uAspect;
+  uniform vec2  uPointer;  // -1..1
+  uniform float uSwell;    // click swell, decays back to 0
+
+  varying vec2 vUv;
+
+  vec2 hash2(vec2 p){
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return fract(sin(p) * 43758.5453) * 2.0 - 1.0;
+  }
+
+  // gradient noise — smooth enough that the contours never show facets
+  float noise(vec2 p){
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    return mix(
+      mix(dot(hash2(i + vec2(0,0)), f - vec2(0,0)), dot(hash2(i + vec2(1,0)), f - vec2(1,0)), u.x),
+      mix(dot(hash2(i + vec2(0,1)), f - vec2(0,1)), dot(hash2(i + vec2(1,1)), f - vec2(1,1)), u.x),
+      u.y);
+  }
+
+  float fbm(vec2 p){
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 4; i++) {
+      v += a * noise(p);
+      p *= 2.02;
+      a *= 0.5;
+    }
+    return v;
+  }
 
   void main() {
-    vec2 uv = gl_PointCoord - 0.5;
-    float d = length(uv);
-    if (d > 0.5) discard;
-    float alpha = smoothstep(0.5, 0.02, d);
+    vec2 uv = vUv;
+    vec2 p = vec2((uv.x - 0.5) * uAspect, uv.y - 0.5);
 
-    vec3 deep = vec3(0.17, 0.12, 0.42);   // brand indigo, far from the camera
-    vec3 near = vec3(0.65, 0.55, 1.00);   // lift
-    vec3 hot  = vec3(0.36, 0.68, 0.70);   // teal, only where energy is high
-    vec3 col  = mix(deep, near, vDepth);
-    col = mix(col, hot, clamp(vGlow - 1.0, 0.0, 1.0) * 0.65);
+    // how far the field has settled: turbulence fades, lines spread apart
+    float calm = smoothstep(0.0, 1.0, uOrder);
+    float amp  = mix(0.62, 0.10, calm);
+    float freq = mix(9.0, 6.0, calm);
 
-    gl_FragColor = vec4(col * (0.75 + vGlow * 0.6), alpha * (0.5 + vDepth * 0.85));
+    // domain warp — this is what makes the lines feel like a current
+    vec2 q = vec2(fbm(p * 1.15 + vec2(0.0, uTime * 0.045)),
+                  fbm(p * 1.15 + vec2(4.7, -uTime * 0.038)));
+    float field = p.y * 2.0 + amp * fbm(p * 1.3 + q * 1.5 + vec2(uTime * 0.03, 0.0));
+
+    // the pointer lifts the sheet, like a hand under silk
+    vec2 mouse = vec2(uPointer.x * uAspect * 0.5, uPointer.y * 0.5);
+    float d = length(p - mouse);
+    field += (0.13 + uSwell * 0.30) * exp(-d * d * 5.0);
+
+    // contours: one line per band, thickness kept constant in screen space
+    float bands = field * freq;
+    float w = clamp(fwidth(bands), 0.0015, 0.5);
+    float line = smoothstep(0.5 + w, 0.5 - w, abs(fract(bands) - 0.5));
+    // where bands pack tighter than a pixel they can only alias into a grey
+    // wash, so fade them out instead of drawing them
+    line *= 1.0 - smoothstep(0.16, 0.45, w);
+
+    // depth cue — lines near the pointer and the centre read brighter
+    float centre = 1.0 - smoothstep(0.15, 1.05, length(p));
+    float near   = exp(-d * d * 3.0);
+    float energy = line * (0.30 + centre * 0.26 + near * 0.40);
+
+    vec3 deep = vec3(0.16, 0.12, 0.40); // brand indigo
+    vec3 lift = vec3(0.62, 0.54, 1.00);
+    vec3 warm = vec3(0.36, 0.68, 0.70); // teal, only at the brightest crests
+    vec3 col  = mix(deep, lift, energy);
+    col = mix(col, warm, smoothstep(0.75, 1.35, energy) * 0.5);
+
+    // vertical falloff so the field never fights the copy at the edges
+    float veil = smoothstep(0.0, 0.26, uv.y) * smoothstep(1.0, 0.74, uv.y);
+
+    // additive blending ignores alpha, so premultiply: empty space must
+    // contribute exactly nothing, or the whole quad hazes the page grey
+    vec3 outc = col * energy * (0.26 + veil * 0.55) * 0.78;
+
+    gl_FragColor = vec4(outc, 1.0);
   }
 `
 
 export default function SignalField({ reduced }: { reduced: boolean }) {
   const mat = useRef<THREE.ShaderMaterial>(null)
   const { viewport } = useThree()
-  const pointer = useRef(new THREE.Vector2(999, 999))
-  const burst = useRef(0)
-
-  const geometry = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    const pos = new Float32Array(COUNT * 3)
-    const grid = new Float32Array(COUNT * 3)
-    const seed = new Float32Array(COUNT)
-    const radius = new Float32Array(COUNT)
-    const speed = new Float32Array(COUNT)
-
-    for (let i = 0; i < COUNT; i++) {
-      const col = i % COLS
-      const row = Math.floor(i / COLS)
-      grid[i * 3] = (col / (COLS - 1) - 0.5) * 19
-      grid[i * 3 + 1] = (row / (ROWS - 1) - 0.5) * 9.5
-      grid[i * 3 + 2] = 0
-      seed[i] = Math.random()
-      radius[i] = 2.1 + Math.random() * 2.6
-      speed[i] = 0.06 + Math.random() * 0.24
-    }
-
-    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    g.setAttribute('aGrid', new THREE.BufferAttribute(grid, 3))
-    g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1))
-    g.setAttribute('aRadius', new THREE.BufferAttribute(radius, 1))
-    g.setAttribute('aSpeed', new THREE.BufferAttribute(speed, 1))
-    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 24)
-    return g
-  }, [])
+  const swell = useRef(0)
 
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
       uOrder: { value: 0 },
-      uPointer: { value: new THREE.Vector2(999, 999) },
-      uBurst: { value: 0 },
-      uVel: { value: 0 },
+      uAspect: { value: 1 },
+      uPointer: { value: new THREE.Vector2(0, 0) },
+      uSwell: { value: 0 },
     }),
     [],
   )
@@ -143,34 +121,31 @@ export default function SignalField({ reduced }: { reduced: boolean }) {
   useFrame((_state, delta) => {
     const u = mat.current?.uniforms
     if (!u) return
+    const dt = Math.min(delta, 0.05)
 
-    u.uTime.value += reduced ? 0 : Math.min(delta, 0.05)
+    u.uTime.value += reduced ? 0 : dt
+    u.uAspect.value = viewport.width / viewport.height
 
-    // pointer → world space on the z=0 plane
-    pointer.current.set(
-      (pointerState.x * viewport.width) / 2,
-      (pointerState.y * viewport.height) / 2,
-    )
-    u.uPointer.value.lerp(pointer.current, 0.12)
+    // pointer eases in, so the lift trails the cursor instead of snapping
+    const pt = u.uPointer.value as THREE.Vector2
+    pt.x += (pointerState.x - pt.x) * 0.055
+    pt.y += (pointerState.y - pt.y) * 0.055
 
-    // the field orders itself over the first viewport of scrolling
-    const target = Math.min(1, scrollState.progress * 5.2)
-    u.uOrder.value += (target - u.uOrder.value) * 0.06
-    u.uVel.value += (Math.min(Math.abs(scrollState.velocity) * 0.05, 2) - u.uVel.value) * 0.08
+    // the field settles across the first screen of scrolling
+    const target = Math.min(1, scrollState.progress * 4.5)
+    u.uOrder.value += (target - u.uOrder.value) * 0.045
 
     if (pointerState.click) {
       pointerState.click = 0
-      burst.current = 0.001
+      swell.current = 1
     }
-    if (burst.current > 0) {
-      burst.current += delta * 9
-      if (burst.current > 9) burst.current = 0
-    }
-    u.uBurst.value = burst.current
+    swell.current *= 0.94
+    u.uSwell.value = swell.current
   })
 
   return (
-    <points geometry={geometry} frustumCulled={false}>
+    <mesh scale={[viewport.width, viewport.height, 1]}>
+      <planeGeometry args={[1, 1]} />
       <shaderMaterial
         ref={mat}
         uniforms={uniforms}
@@ -180,6 +155,6 @@ export default function SignalField({ reduced }: { reduced: boolean }) {
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
-    </points>
+    </mesh>
   )
 }

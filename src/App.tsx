@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useSmoothScroll } from './lib/motion'
+import { useScrollChoreography } from './lib/scrollfx'
+import Rail from './components/Rail'
 import Preloader from './components/Preloader'
 import Cursor from './components/Cursor'
 import Scene from './components/Scene'
@@ -31,6 +33,7 @@ const CHANNELS = [
 
 export default function App() {
   useSmoothScroll()
+  useScrollChoreography()
   const progress = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function App() {
       />
 
       <Nav />
+      <Rail />
       <TourHud />
 
       <main className="relative">

@@ -20,7 +20,7 @@ const CARDS = [
   },
 ]
 
-function Card({ card }: { card: (typeof CARDS)[number] }) {
+function Card({ card, side }: { card: (typeof CARDS)[number]; side: 'left' | 'right' }) {
   const el = useRef<HTMLDivElement>(null)
 
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -50,6 +50,7 @@ function Card({ card }: { card: (typeof CARDS)[number] }) {
       onPointerLeave={out}
       data-cursor="hot"
       data-label={card.tag.split(' ')[0]}
+      data-fx={side}
       className="group relative flex flex-col gap-4 overflow-hidden bg-ground p-[clamp(1.75rem,4vw,3rem)] [transform-style:preserve-3d]"
     >
       <div
@@ -91,8 +92,8 @@ export default function Brands() {
       </Reveal>
 
       <div className="mt-14 grid gap-px bg-line md:grid-cols-2">
-        {CARDS.map((c) => (
-          <Card key={c.tag} card={c} />
+        {CARDS.map((c, i) => (
+          <Card key={c.tag} card={c} side={i === 0 ? 'left' : 'right'} />
         ))}
       </div>
     </section>

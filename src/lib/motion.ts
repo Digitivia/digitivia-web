@@ -17,8 +17,21 @@ export const prefersReduced = () => {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** Scroll progress of the whole document, 0..1 — read by the WebGL field. */
-export const scrollState = { progress: 0, velocity: 0 }
+/**
+ * Scroll progress of the whole document, 0..1, plus raw and smoothed velocity.
+ * `smooth` is what visual effects should read: raw velocity spikes on every
+ * wheel tick and would make anything driven by it twitch.
+ */
+export const scrollState = { progress: 0, velocity: 0, smooth: 0, direction: 1 }
+
+if (typeof window !== 'undefined') {
+  const ease = () => {
+    scrollState.smooth += (scrollState.velocity - scrollState.smooth) * 0.12
+    scrollState.velocity *= 0.86
+    requestAnimationFrame(ease)
+  }
+  requestAnimationFrame(ease)
+}
 
 /**
  * Pointer in NDC (-1..1), tracked on the window rather than the canvas so the
@@ -71,9 +84,10 @@ export function useSmoothScroll() {
     })
     lenisRef = lenis
 
-    lenis.on('scroll', (e: { progress: number; velocity: number }) => {
+    lenis.on('scroll', (e: { progress: number; velocity: number; direction: number }) => {
       scrollState.progress = e.progress
       scrollState.velocity = e.velocity
+      if (e.direction) scrollState.direction = e.direction
       ScrollTrigger.update()
     })
 

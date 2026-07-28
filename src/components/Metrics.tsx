@@ -34,7 +34,10 @@ export default function Metrics() {
 
   return (
     <section id="proof" ref={root} className="relative z-10 border-y border-line bg-ground/60 backdrop-blur-sm">
-      <div className="mx-auto grid max-w-[1240px] gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        data-fx="wipe"
+        className="mx-auto grid max-w-[1240px] gap-px bg-line sm:grid-cols-2 lg:grid-cols-4"
+      >
         {M.map((m) => (
           <div
             key={m.label}
